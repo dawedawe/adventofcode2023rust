@@ -59,6 +59,32 @@ fn is_game_possible(game: &Game, maximums: &CubeSet) -> bool {
         && maximums.get(&Color::Blue).unwrap() >= &max_blue_in_game
 }
 
+fn get_game_power(game: &Game) -> usize {
+    let mut max_red_in_game = 1;
+    let mut max_green_in_game = 1;
+    let mut max_blue_in_game = 1;
+    game.sets.iter().for_each(|s| {
+        if let Some(n) = s.get(&Color::Red) {
+            if *n > max_red_in_game {
+                max_red_in_game = *n
+            }
+        }
+
+        if let Some(n) = s.get(&Color::Green) {
+            if *n > max_green_in_game {
+                max_green_in_game = *n
+            }
+        }
+        if let Some(n) = s.get(&Color::Blue) {
+            if *n > max_blue_in_game {
+                max_blue_in_game = *n
+            }
+        }
+    });
+
+    max_red_in_game * max_green_in_game * max_blue_in_game
+}
+
 // "Game 34"
 fn parse_game_id(s: &str) -> usize {
     let re = Regex::new(r"Game (\d+)").unwrap();
@@ -107,5 +133,12 @@ pub fn day02_part1() {
         .map(|g| g.id)
         .collect();
     let sum: usize = possible_ids.into_iter().sum();
+    println!("{}", sum);
+}
+
+pub fn day02_part2() {
+    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
+    let games: Vec<Game> = input.lines().map(parse_line).collect();
+    let sum: usize = games.into_iter().map(|g| get_game_power(&g)).sum();
     println!("{}", sum);
 }
