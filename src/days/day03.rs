@@ -1,3 +1,5 @@
+use regex::Regex;
+use std::collections::HashSet;
 use std::{cmp::max, cmp::min, fs};
 
 const INPUT: &str = "day03input.txt";
@@ -75,4 +77,84 @@ pub fn day03_part1() {
 
     let sum: i32 = found_nums.into_iter().sum();
     println!("{}", sum);
+}
+
+type Coord = (usize, usize);
+
+struct Number {
+    num: i32,
+    coordinates: Vec<(usize, usize)>,
+}
+
+fn numbers_in_line(line_idx: usize, line: &str) -> Vec<Number> {
+    let re = Regex::new(r"(\d+)").unwrap();
+    let mut numbers = vec![];
+    for m in re.find_iter(line) {
+        let num = m.as_str().parse::<i32>().unwrap();
+        let mut coordinates = vec![];
+        for c in m.range() {
+            coordinates.push((line_idx, c));
+        }
+        let number = Number { num, coordinates };
+        numbers.push(number);
+    }
+
+    numbers
+}
+
+fn get_neighbourhood(pos: Coord) -> Vec<Coord> {
+    let mut coords = vec![];
+    for line_idx in (pos.0 - 1)..=(pos.0 + 1) {
+        for col_idx in (pos.1 - 1)..=(pos.1 + 1) {
+            coords.push((line_idx, col_idx));
+        }
+    }
+
+    coords
+}
+
+pub fn day03_part2() {
+    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
+    let lines: Vec<&str> = input.lines().collect();
+    let matrix: Vec<Vec<char>> = lines
+        .into_iter()
+        .map(|line| line.chars().collect())
+        .collect();
+    let line_len = matrix[0].len();
+    let mut nums_in_input = vec![];
+    let mut stars_in_input = vec![];
+
+    for (line_idx, line) in matrix.iter().enumerate() {
+        let nums_in_line = numbers_in_line(line_idx, &line.iter().collect::<String>()[..]);
+        nums_in_line.into_iter().for_each(|n| {
+            nums_in_input.push(n);
+        });
+
+        for col_idx in 0..line_len {
+            if matrix[line_idx][col_idx] == '*' {
+                stars_in_input.push((line_idx, col_idx));
+            }
+        }
+    }
+
+    let mut gear_ratios = vec![];
+    for star in stars_in_input {
+        let star_neighbourhood = get_neighbourhood(star);
+        let mut s1: HashSet<Coord> = HashSet::new();
+        star_neighbourhood.into_iter().for_each(|p| {
+            s1.insert(p);
+        });
+
+        let nums_around_star: Vec<&Number> = nums_in_input
+            .iter()
+            .filter(|n| n.coordinates.iter().any(|p| s1.contains(p)))
+            .collect();
+
+        if nums_around_star.len() == 2 {
+            gear_ratios.push(nums_around_star[0].num * nums_around_star[1].num);
+        }
+    }
+
+    let s: i32 = gear_ratios.iter().sum();
+    println!("{}", s);
 }
